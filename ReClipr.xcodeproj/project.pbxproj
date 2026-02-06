@@ -10,9 +10,31 @@
 		0A8E38122EF807E700508BF0 /* ReClipr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReClipr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		0A8E38402EF81B2400508BF0 /* Exceptions for "ReClipr" folder in "ReClipr" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				LoginHelper/main.swift,
+			);
+			platformFiltersByRelativePath = {
+				App/ReCliprApp.swift = (macos, );
+				Clipboard/ClipboardMonitor.swift = (macos, );
+				Clipboard/ClipboardStore.swift = (macos, );
+				Model/ClipContent.swift = (macos, );
+				Model/ClipItem.swift = (macos, );
+				Persistence/Persistence.swift = (macos, );
+				UI/Menu/ReCliprMenuView.swift = (macos, );
+			};
+			target = 0A8E38112EF807E700508BF0 /* ReClipr */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		0A8E38142EF807E700508BF0 /* ReClipr */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0A8E38402EF81B2400508BF0 /* Exceptions for "ReClipr" folder in "ReClipr" target */,
+			);
 			path = ReClipr;
 			sourceTree = "<group>";
 		};
