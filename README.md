@@ -41,6 +41,7 @@ This project is a **hands-on learning exercise** to understand macOS application
 - ⚙️ **Preferences Window**
   - Configure duplicate behavior
   - Manage ignored apps
+  - Keyboard shortcut
 
 ---
 
