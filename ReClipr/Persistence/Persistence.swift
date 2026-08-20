@@ -12,39 +12,35 @@ private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "ReClipr"
 
 final class Persistence {
     static let shared = Persistence()
-    private init() {}
-    
-    private var appSupportURL: URL {
+
+    // Computed once at init — avoids running createDirectory on every load/save.
+    private let storeURL: URL
+
+    private init() {
         let fm = FileManager.default
         let base = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
         let dir = base.appendingPathComponent("ReClipr", isDirectory: true)
         try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir
+        storeURL = dir.appendingPathComponent("history.json")
     }
-    
-    private var storeURL: URL {
-        appSupportURL.appendingPathComponent("history.json")
-    }
-    
+
     func load() -> [ClipItem] {
-        guard let data = try? Data(contentsOf: storeURL) else {
-            return []
-        }
-        
+        guard let data = try? Data(contentsOf: storeURL) else { return [] }
         do {
             return try JSONDecoder().decode([ClipItem].self, from: data)
-        }   catch{
+        } catch {
             logger.error("Failed to decode history: \(error, privacy: .public)")
             return []
         }
-
     }
-    
-    func save(_ items: [ClipItem]){
-        guard let data = try? JSONEncoder().encode(items) else {
-            return
+
+    func save(_ items: [ClipItem]) {
+        do {
+            let data = try JSONEncoder().encode(items)
+            try data.write(to: storeURL, options: .atomic)
+        } catch {
+            logger.error("Failed to save history: \(error, privacy: .public)")
         }
-        try? data.write(to: storeURL, options: [.atomic])
     }
 }

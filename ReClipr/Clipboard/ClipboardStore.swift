@@ -11,6 +11,7 @@ final class ClipboardStore: ObservableObject {
     @AppStorage("maxHistoryCount") private var maxHistoryCount: Int = 200
 
     private var saveTask: Task<Void, Never>?
+    private var settingsObserver: Any?
 
     // Prevents scheduleSave() from firing during init when items are first loaded
     private var isInitializing = true
@@ -62,10 +63,20 @@ final class ClipboardStore: ObservableObject {
             self.addItem(content, webMeta: webMeta)
         }
         monitor.start()
+
+        // Enforce the history limit immediately when maxHistoryCount changes in Preferences.
+        settingsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.enforceHistoryLimit()
+        }
     }
 
     deinit {
         monitor.stop()
+        if let o = settingsObserver { NotificationCenter.default.removeObserver(o) }
     }
 
     var filteredItems: [ClipItem] {
@@ -133,13 +144,7 @@ final class ClipboardStore: ObservableObject {
             ), at: 0)
         }
 
-        if items.count > maxHistoryCount {
-            let dropped = Array(items.suffix(items.count - maxHistoryCount))
-            items = Array(items.prefix(maxHistoryCount))
-            for item in dropped {
-                if case .image(let hash) = item.content { cleanupImageIfOrphaned(hash) }
-            }
-        }
+        enforceHistoryLimit()
     }
 
     func copyToClipboard(_ item: ClipItem) {
@@ -170,6 +175,16 @@ final class ClipboardStore: ObservableObject {
         items.removeAll()
         ImageStore.shared.deleteAll()
         ImageCache.shared.invalidateAll()
+    }
+
+    // Trims items to maxHistoryCount. Called after every add and on settings changes.
+    private func enforceHistoryLimit() {
+        guard items.count > maxHistoryCount else { return }
+        let dropped = Array(items.suffix(items.count - maxHistoryCount))
+        items = Array(items.prefix(maxHistoryCount))
+        for item in dropped {
+            if case .image(let hash) = item.content { cleanupImageIfOrphaned(hash) }
+        }
     }
 
     // Deletes the image file only when no remaining item references the same hash.
