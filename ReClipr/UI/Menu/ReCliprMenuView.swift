@@ -5,11 +5,25 @@
 //  Created by Udit Sehra on 21/12/25.
 //
 
+import AppKit
 import SwiftUI
 
 private enum ViewMode: String {
     case list, grid
 }
+
+// Cached formatters — DateFormatter allocation is expensive; reuse across renders.
+private let monthOnlyFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.dateFormat = "MMMM"
+    return f
+}()
+
+private let monthYearFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.dateFormat = "MMM yyyy"
+    return f
+}()
 
 private enum DateFilter: Hashable {
     case all, today, yesterday, pastWeek, pastMonth
@@ -26,10 +40,10 @@ private enum DateFilter: Hashable {
             var comps = DateComponents()
             comps.year = year; comps.month = month; comps.day = 1
             guard let date = Calendar.current.date(from: comps) else { return "" }
-            let fmt = DateFormatter()
             let thisYear = Calendar.current.component(.year, from: Date())
-            fmt.dateFormat = year == thisYear ? "MMMM" : "MMM yyyy"
-            return fmt.string(from: date)
+            return year == thisYear
+                ? monthOnlyFormatter.string(from: date)
+                : monthYearFormatter.string(from: date)
         }
     }
 
@@ -73,8 +87,6 @@ private struct FilterPillStyle: ButtonStyle {
 }
 
 struct ReCliprMenuView: View {
-    @Environment(\.openWindow) private var openWindow
-    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var store: ClipboardStore
 
     @AppStorage("viewMode") private var viewModeRaw: String = ViewMode.list.rawValue
@@ -182,7 +194,9 @@ struct ReCliprMenuView: View {
 
             Divider()
 
-            Button("Preferences...") { openWindow(id: "preferences") }
+            Button("Preferences...") {
+                NotificationCenter.default.post(name: .openReCliprPreferences, object: nil)
+            }
 
             if showClearConfirmation {
                 HStack(spacing: 8) {
@@ -209,6 +223,7 @@ struct ReCliprMenuView: View {
         .onAppear {
             store.searchQuery = ""
             dateFilter = .all
+            copiedItemID = nil
         }
     }
 
@@ -374,7 +389,7 @@ struct ReCliprMenuView: View {
         }
         Task {
             try? await Task.sleep(for: .milliseconds(500))
-            dismiss()
+            NotificationCenter.default.post(name: .closeReCliprPopover, object: nil)
         }
     }
 }

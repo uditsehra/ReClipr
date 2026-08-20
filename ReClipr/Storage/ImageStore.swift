@@ -11,7 +11,19 @@ import Foundation
 
 final class ImageStore {
     nonisolated static let shared = ImageStore()
-    private init() {}
+
+    // Computed once at init — avoids running createDirectory on every I/O call.
+    private let imagesDir: URL
+
+    private init() {
+        let fm = FileManager.default
+        let base = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSHomeDirectory())
+                .appendingPathComponent("Library/Application Support")
+        let dir = base.appendingPathComponent("ReClipr/images", isDirectory: true)
+        try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        imagesDir = dir
+    }
 
     // MARK: - Public API (nonisolated — safe to call from any thread / actor)
 
@@ -35,28 +47,17 @@ final class ImageStore {
     }
 
     nonisolated func deleteAll() {
-        let dir = imagesDir
         guard let files = try? FileManager.default.contentsOfDirectory(
-            at: dir, includingPropertiesForKeys: nil
+            at: imagesDir, includingPropertiesForKeys: nil
         ) else { return }
         files.forEach { try? FileManager.default.removeItem(at: $0) }
     }
 
     // MARK: - Private
 
-    nonisolated private var imagesDir: URL {
-        let fm = FileManager.default
-        let base = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? URL(fileURLWithPath: NSHomeDirectory())
-                .appendingPathComponent("Library/Application Support")
-        let dir = base.appendingPathComponent("ReClipr/images", isDirectory: true)
-        try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir
-    }
-
     nonisolated private func sha256(_ data: Data) -> String {
         SHA256.hash(data: data)
-            .compactMap { String(format: "%02x", $0) }
+            .map { String(format: "%02x", $0) }
             .joined()
     }
 }

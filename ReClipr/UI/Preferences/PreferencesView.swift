@@ -5,11 +5,60 @@
 //  Created by Udit Sehra on 21/12/25.
 //
 
+import AppKit
+import Combine
 import OSLog
 import ServiceManagement
 import SwiftUI
 
 private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "ReClipr", category: "Preferences")
+
+// MARK: - Shortcut Recorder (class so the event monitor closure can capture it weakly)
+
+private final class ShortcutRecorder: ObservableObject {
+    @Published var isRecording = false
+    private var monitor: Any?
+
+    func start(onRecord: @escaping (Int, Int, String) -> Void) {
+        isRecording = true
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self else { return event }
+
+            if event.keyCode == 53 { // Escape — cancel recording
+                self.stop()
+                return nil
+            }
+
+            let mods = event.modifierFlags
+                .intersection(.deviceIndependentFlagsMask)
+                .subtracting([.capsLock, .numericPad, .function])
+            guard !mods.isEmpty else { return event } // require at least one real modifier
+
+            let display = Self.displayString(event: event, modifiers: mods)
+            onRecord(Int(event.keyCode), Int(mods.rawValue), display)
+            self.stop()
+            return nil
+        }
+    }
+
+    func stop() {
+        isRecording = false
+        if let m = monitor { NSEvent.removeMonitor(m); monitor = nil }
+    }
+
+    private static func displayString(event: NSEvent, modifiers: NSEvent.ModifierFlags) -> String {
+        var s = ""
+        if modifiers.contains(.control) { s += "⌃" }
+        if modifiers.contains(.option)  { s += "⌥" }
+        if modifiers.contains(.shift)   { s += "⇧" }
+        if modifiers.contains(.command) { s += "⌘" }
+        let key = event.charactersIgnoringModifiers?.uppercased() ?? ""
+        s += key.isEmpty ? "?" : key
+        return s
+    }
+}
+
+// MARK: - PreferencesView
 
 struct PreferencesView: View {
     @AppStorage("launchAtLogin") private var launchAtLogin: Bool = false
@@ -23,6 +72,13 @@ struct PreferencesView: View {
 
     @AppStorage("maxHistoryCount")
     private var maxHistoryCount: Int = 200
+
+    // Default: ⌘⇧V (keyCode 9, modifiers = command | shift = 1_179_648)
+    @AppStorage("shortcutKeyCode")     private var shortcutKeyCode: Int    = 9
+    @AppStorage("shortcutModifiers")   private var shortcutModifiersRaw: Int = 1_179_648
+    @AppStorage("shortcutDisplay")     private var shortcutDisplay: String  = "⌘⇧V"
+
+    @StateObject private var recorder = ShortcutRecorder()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -90,6 +146,57 @@ struct PreferencesView: View {
                 Toggle("", isOn: $launchAtLogin)
                     .labelsHidden()
                     .onChange(of: launchAtLogin) { _, newValue in toggleLaunchAtLogin(newValue) }
+            }
+
+            Divider()
+
+            // Keyboard shortcut
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Keyboard Shortcut")
+                    .font(.system(size: 13, weight: .medium))
+
+                HStack(spacing: 8) {
+                    Text("Open history")
+                        .font(.system(size: 13))
+
+                    Spacer()
+
+                    Button(recorder.isRecording ? "Press keys…" : shortcutDisplay) {
+                        if recorder.isRecording {
+                            recorder.stop()
+                        } else {
+                            recorder.start { keyCode, modRaw, display in
+                                UserDefaults.standard.set(keyCode, forKey: "shortcutKeyCode")
+                                UserDefaults.standard.set(modRaw,  forKey: "shortcutModifiers")
+                                UserDefaults.standard.set(display, forKey: "shortcutDisplay")
+                                GlobalHotkeyManager.shared.register(
+                                    keyCode: keyCode,
+                                    modifiers: NSEvent.ModifierFlags(rawValue: UInt(modRaw))
+                                )
+                            }
+                        }
+                    }
+                    .foregroundStyle(recorder.isRecording ? Color.orange : Color.primary)
+                    .buttonStyle(.bordered)
+
+                    Button {
+                        recorder.stop()
+                        GlobalHotkeyManager.shared.unregister()
+                        UserDefaults.standard.set(-1,     forKey: "shortcutKeyCode")
+                        UserDefaults.standard.set(0,      forKey: "shortcutModifiers")
+                        UserDefaults.standard.set("None", forKey: "shortcutDisplay")
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Clear shortcut")
+                    .disabled(shortcutKeyCode == -1)
+                }
+
+                Text("Works system-wide. Default: ⌘⇧V")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
 
             Divider()
