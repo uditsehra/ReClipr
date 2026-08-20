@@ -1,0 +1,171 @@
+{
+  "color-space-for-untagged-svg-colors" : "display-p3",
+  "fill" : "automatic",
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "blend-mode-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : "normal"
+            }
+          ],
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : {
+                "automatic-gradient" : "display-p3:1.00000,0.76025,0.14923,1.00000",
+                "orientation" : {
+                  "start" : {
+                    "x" : 0.8079477663706991,
+                    "y" : 0.5
+                  },
+                  "stop" : {
+                    "x" : 0.09359392341842408,
+                    "y" : 0.37523953419811323
+                  }
+                }
+              }
+            }
+          ],
+          "glass-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : true
+            }
+          ],
+          "image-name" : "paper-clip-svgrepo-com-2.svg",
+          "name" : "paper-clip-svgrepo-com-2",
+          "position" : {
+            "scale" : 0.53,
+            "translation-in-points" : [
+              87.11476481353282,
+              28.60569788127873
+            ]
+          }
+        },
+        {
+          "fill" : "automatic",
+          "image-name" : "lines-menu-menu-bar-svgrepo-com.svg",
+          "name" : "lines-menu-menu-bar-svgrepo-com",
+          "position" : {
+            "scale" : 0.54,
+            "translation-in-points" : [
+              52.64132731353277,
+              179.4361869236609
+            ]
+          }
+        },
+        {
+          "fill" : "automatic",
+          "image-name" : "lines-menu-menu-bar-svgrepo-com.svg",
+          "name" : "lines-menu-menu-bar-svgrepo-com",
+          "position" : {
+            "scale" : 0.54,
+            "translation-in-points" : [
+              -30.005666662309977,
+              114.26943982887565
+            ]
+          }
+        },
+        {
+          "blend-mode-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : "normal"
+            }
+          ],
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : {
+                "linear-gradient" : [
+                  "display-p3:0.89574,0.89574,0.89574,1.00000",
+                  "display-p3:0.76906,0.76906,0.76906,1.00000"
+                ],
+                "orientation" : {
+                  "start" : {
+                    "x" : 0.5,
+                    "y" : 0
+                  },
+                  "stop" : {
+                    "x" : 0.5,
+                    "y" : 0.7
+                  }
+                }
+              }
+            }
+          ],
+          "hidden" : false,
+          "image-name" : "paperclip-filled-tool-svgrepo-com-2.svg",
+          "name" : "paperclip-filled-tool-svgrepo-com-2",
+          "position-specializations" : [
+            {
+              "value" : {
+                "scale" : 3.73,
+                "translation-in-points" : [
+                  -1.5446392006595033,
+                  -15.83426429892313
+                ]
+              }
+            },
+            {
+              "appearance" : "dark",
+              "value" : {
+                "scale" : 4.02,
+                "translation-in-points" : [
+                  -1.808999999999969,
+                  2.5599999999999454
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "blend-mode" : "darken",
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : {
+                "automatic-gradient" : "display-p3:0.09684,0.07531,0.57078,1.00000",
+                "orientation" : {
+                  "start" : {
+                    "x" : 0.5,
+                    "y" : 0
+                  },
+                  "stop" : {
+                    "x" : 0.5,
+                    "y" : 0.7
+                  }
+                }
+              }
+            }
+          ],
+          "image-name" : "square-svgrepo-com-2.svg",
+          "name" : "square-svgrepo-com-2",
+          "position" : {
+            "scale" : 1.1800000000000002,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : [
+      "iOS"
+    ]
+  }
+}
