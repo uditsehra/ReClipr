@@ -15,7 +15,7 @@ final class ClipboardMonitor {
     private var timer: Timer?
     private var lastChangeCount: Int = NSPasteboard.general.changeCount
 
-    var onNewCopy: ((ClipContent, ClipWebMeta) -> Void)?
+    var onNewCopy: (@MainActor (ClipContent, ClipWebMeta) -> Void)?
 
     deinit {
         stop()
@@ -60,13 +60,18 @@ final class ClipboardMonitor {
             return
         }
 
-        // Priority 2: Images — compress to PNG, save to disk, reference by hash
+        // Priority 2: Images — offload PNG compression + disk write to a background task
+        // so the 0.5 s timer tick is never blocked by a large screenshot.
         if let image = NSImage(pasteboard: pasteboard),
-           let tiff = image.tiffRepresentation,
-           let bitmap = NSBitmapImageRep(data: tiff),
-           let png = bitmap.representation(using: .png, properties: [:]) {
-            let hash = ImageStore.shared.save(png)
-            onNewCopy?(.image(hash), webMeta)
+           let tiff = image.tiffRepresentation {
+            let meta = webMeta
+            let callback = onNewCopy
+            Task.detached(priority: .utility) {
+                guard let bitmap = NSBitmapImageRep(data: tiff),
+                      let png = bitmap.representation(using: .png, properties: [:]) else { return }
+                let hash = ImageStore.shared.save(png)
+                await MainActor.run { callback?(.image(hash), meta) }
+            }
             return
         }
 
