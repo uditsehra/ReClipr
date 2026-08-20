@@ -40,7 +40,7 @@ enum ClipContent: Codable, Equatable {
     }
     
     func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: CodingKeys.self)
+        var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
         case .text(let text):
             try container.encode(ContentType.text, forKey: .type)
@@ -89,7 +89,7 @@ extension ClipContent {
     var displayTitle: String {
         switch self {
         case .text(let text):
-            return text.count > 80 ? String(text.prefix(80)) + "…" : text
+            return text.count > 400 ? String(text.prefix(400)) + "…" : text
             
         case .image: 
             return "[Image]"

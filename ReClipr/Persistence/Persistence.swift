@@ -13,13 +13,9 @@ final class Persistence {
     
     private var appSupportURL: URL {
         let fm = FileManager.default
-        let base = try? fm.url(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: true)
-        
-        let dir = base!.appendingPathComponent("ReClipr", isDirectory: true)
+        let base = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
+        let dir = base.appendingPathComponent("ReClipr", isDirectory: true)
         try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }

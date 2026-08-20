@@ -8,13 +8,7 @@
 import SwiftUI
 
 struct RootView: View {
-    @StateObject private var store = ClipboardStore()
-
     var body: some View {
         ReCliprMenuView()
-            .environmentObject(store)
-            .onAppear {
-                store.startMonitoring()
-            }
     }
 }

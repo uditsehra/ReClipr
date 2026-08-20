@@ -1,62 +1,78 @@
 //
-//  ClipboardMoitor.swift
+//  ClipboardMonitor.swift
 //  ReClipr
 //
 //  Created by Udit Sehra on 21/12/25.
 //
 import AppKit
 
-final class ClipboardMonitor{
-    //var objectWillChange: ObservableObjectPublisher
-    
+struct ClipWebMeta {
+    let sourceURL: URL?
+    let pageTitle: String?
+}
+
+final class ClipboardMonitor {
     private var timer: Timer?
     private var lastChangeCount: Int = NSPasteboard.general.changeCount
-    
-    var onNewCopy: ((ClipContent) -> Void)?
-    
-    func start(){
+
+    var onNewCopy: ((ClipContent, ClipWebMeta) -> Void)?
+
+    deinit {
         stop()
-        
-        timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true){
+    }
+
+    func start() {
+        stop()
+        let t = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) {
             [weak self] _ in self?.checkPasteboard()
         }
-        
-        RunLoop.main.add(timer!, forMode: .common)
+        timer = t
+        RunLoop.main.add(t, forMode: .common)
     }
-    
-    func stop(){
+
+    func stop() {
         timer?.invalidate()
         timer = nil
     }
-    
-    private func checkPasteboard(){
+
+    // Call after programmatically writing to the pasteboard so the monitor
+    // doesn't re-detect our own write as an incoming copy.
+    func syncChangeCount() {
+        lastChangeCount = NSPasteboard.general.changeCount
+    }
+
+    private func checkPasteboard() {
         let pasteboard = NSPasteboard.general
         guard pasteboard.changeCount != lastChangeCount else { return }
         lastChangeCount = pasteboard.changeCount
-        
-        //Priority 1 : Files
+
+        // Browsers write public.url (source page URL) and public.url-name (page/link title)
+        let webURL = pasteboard.string(forType: .init("public.url")).flatMap { URL(string: $0) }
+        let pageTitle = pasteboard.string(forType: .init("public.url-name"))
+        let webMeta = ClipWebMeta(sourceURL: webURL, pageTitle: pageTitle)
+
+        // Priority 1: File URLs only (excludes http/https web URLs)
         if let urls = pasteboard.readObjects(
             forClasses: [NSURL.self],
-            options: nil
-        ) as? [URL], let first = urls.first{
-            onNewCopy?(.file(first))
+            options: [.urlReadingFileURLsOnly: true]
+        ) as? [URL], let first = urls.first {
+            onNewCopy?(.file(first), webMeta)
             return
         }
-        
-        //Priority 2: Images
+
+        // Priority 2: Images — compress to PNG to save significant storage vs raw TIFF
         if let image = NSImage(pasteboard: pasteboard),
-            let tiff = image.tiffRepresentation{
-                onNewCopy?(.image(tiff))
-                return
-            
+           let tiff = image.tiffRepresentation,
+           let bitmap = NSBitmapImageRep(data: tiff),
+           let png = bitmap.representation(using: .png, properties: [:]) {
+            onNewCopy?(.image(png), webMeta)
+            return
         }
-        
-        //Priority 3: Text
-        if let text = pasteboard.string(forType: .string){
-            if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                onNewCopy?(.text(text))
-                return
-            }
+
+        // Priority 3: Text
+        if let text = pasteboard.string(forType: .string),
+           !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            onNewCopy?(.text(text), webMeta)
         }
     }
 }

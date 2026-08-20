@@ -7,25 +7,29 @@
 import SwiftUI
 import Combine
 
-@MainActor
 final class ClipboardStore: ObservableObject {
+    @AppStorage("maxHistoryCount") private var maxHistoryCount: Int = 200
+
+    private var saveTask: Task<Void, Never>?
+
+    // Prevents scheduleSave() from firing during init when items are first loaded
+    private var isInitializing = true
+
     @Published private(set) var items: [ClipItem] = [] {
-        didSet{
-            Persistence.shared.save(items)
+        didSet {
+            guard !isInitializing else { return }
+            scheduleSave()
         }
     }
-    
-    // Adding duplication policy
+
     @AppStorage("duplicatePolicy")
     private var duplicatePolicyRaw: String = DuplicatePolicy.none.rawValue
     @AppStorage("duplicateInterval")
-    private var duplicateInterval: Double = 300 // seconds (5 min)
-    
-    //Adding IgnoredApps
+    private var duplicateInterval: Double = 300
+
     @AppStorage("ignoredApps")
     private var ignoredAppsRaw: String = "com.apple.keychainaccess"
 
-    
     private var ignoredApps: Set<String> {
         Set(
             ignoredAppsRaw
@@ -34,140 +38,139 @@ final class ClipboardStore: ObservableObject {
                 .filter { !$0.isEmpty }
         )
     }
-    
-    //Adding Source Info
+
     @Published var searchQuery: String = ""
-    private func currentSourceApp() -> (bundleID: String?, name: String?){
-        guard let app = NSWorkspace.shared.frontmostApplication else{
-            return (nil, nil)
-        }
-        
-        return (
-            app.bundleIdentifier,
-            app.localizedName
-        )
-    }
-    
-    var filteredItems: [ClipItem] {
-        guard !searchQuery.isEmpty else {return items}
-        
-        let q = searchQuery.lowercased()
-        
-        return items.filter { item in
-            //Search Content
-            if item.content.searchableText.lowercased().contains(q){
-                return true
-            }
-            //Search source app name
-            if let appName = item.sourceAppName?.lowercased(),
-               appName.contains(q) {
-                return true
-            }
-            
-            return false
-        }
-    }
-    
-    // Duplicates monitoring
+
     private var duplicatePolicy: DuplicatePolicy {
         DuplicatePolicy(rawValue: duplicatePolicyRaw) ?? .none
     }
-    
+
     private let monitor = ClipboardMonitor()
-    
+
     init() {
         items = Persistence.shared.load()
-        monitor.onNewCopy = {
-            [weak self] content in guard let self else {return}
-            
-            if let sourceApp = NSWorkspace.shared.frontmostApplication?
-                .bundleIdentifier, ignoredApps.contains(sourceApp){
+        isInitializing = false
+
+        // Wire callback before starting so no events are missed.
+        // The timer fires on RunLoop.main so this closure always runs on the main thread.
+        monitor.onNewCopy = { [weak self] content, webMeta in
+            guard let self else { return }
+            if let bundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
+               self.ignoredApps.contains(bundleID) {
                 return
             }
-            
-            self.addItem(content)
+            self.addItem(content, webMeta: webMeta)
         }
-    }
-    
-    func startMonitoring(){
         monitor.start()
     }
-    
-    func stopMonitoring(){
+
+    deinit {
         monitor.stop()
     }
-    
-    private func addItem(_ content: ClipContent) {
+
+    var filteredItems: [ClipItem] {
+        guard !searchQuery.isEmpty else { return items }
+        let q = searchQuery.lowercased()
+        return items.filter { item in
+            if item.content.searchableText.lowercased().contains(q) { return true }
+            if let name = item.sourceAppName?.lowercased(), name.contains(q) { return true }
+            if let title = item.sourcePageTitle?.lowercased(), title.contains(q) { return true }
+            if let url = item.sourcePageURL?.absoluteString.lowercased(), url.contains(q) { return true }
+            return false
+        }
+    }
+
+    private func currentSourceApp() -> (bundleID: String?, name: String?) {
+        guard let app = NSWorkspace.shared.frontmostApplication else { return (nil, nil) }
+        return (app.bundleIdentifier, app.localizedName)
+    }
+
+    private func addItem(_ content: ClipContent, webMeta: ClipWebMeta) {
         let now = Date()
-        
-        if let existingIndex = items.firstIndex(where: { $0.content == content}){
+
+        if let existingIndex = items.firstIndex(where: { $0.content == content }) {
             let existingItem = items[existingIndex]
-            
-            switch duplicatePolicy{
+
+            switch duplicatePolicy {
             case .none:
                 items.remove(at: existingIndex)
                 items.insert(existingItem, at: 0)
-                
+
             case .timed:
                 let elapsed = now.timeIntervalSince(existingItem.date)
-                
                 if elapsed >= duplicateInterval {
                     let source = currentSourceApp()
-                    let newItem = ClipItem(
+                    items.insert(ClipItem(
                         content: content,
                         sourceBundleID: source.bundleID,
-                        sourceAppName: source.name
-                    )
-                    items.insert(newItem, at: 0)
+                        sourceAppName: source.name,
+                        sourcePageURL: webMeta.sourceURL,
+                        sourcePageTitle: webMeta.pageTitle
+                    ), at: 0)
                 } else {
                     items.remove(at: existingIndex)
                     items.insert(existingItem, at: 0)
                 }
-                
+
             case .always:
                 let source = currentSourceApp()
-                let newItem = ClipItem(
+                items.insert(ClipItem(
                     content: content,
                     sourceBundleID: source.bundleID,
-                    sourceAppName: source.name
-                )
-                items.insert(newItem, at: 0)
+                    sourceAppName: source.name,
+                    sourcePageURL: webMeta.sourceURL,
+                    sourcePageTitle: webMeta.pageTitle
+                ), at: 0)
             }
         } else {
-//
-//            let item = ClipItem(content: content)
-//            items.insert(item, at: 0)
             let source = currentSourceApp()
-            let item = ClipItem(
+            items.insert(ClipItem(
                 content: content,
                 sourceBundleID: source.bundleID,
-                sourceAppName: source.name
-            )
-            items.insert(item, at: 0)
+                sourceAppName: source.name,
+                sourcePageURL: webMeta.sourceURL,
+                sourcePageTitle: webMeta.pageTitle
+            ), at: 0)
+        }
+
+        if items.count > maxHistoryCount {
+            items = Array(items.prefix(maxHistoryCount))
         }
     }
-    
+
     func copyToClipboard(_ item: ClipItem) {
         let pb = NSPasteboard.general
         pb.clearContents()
-        
         switch item.content {
         case .text(let text):
             pb.setString(text, forType: .string)
-            
         case .image(let data):
             if let image = NSImage(data: data) {
                 pb.writeObjects([image])
             }
-            
         case .file(let url):
             pb.writeObjects([url as NSURL])
         }
+        // Prevent the monitor from re-detecting this programmatic write
+        monitor.syncChangeCount()
     }
-    
+
+    func deleteItem(_ item: ClipItem) {
+        items.removeAll { $0.id == item.id }
+    }
+
     func clearAll() {
         items.removeAll()
     }
-    
-}
 
+    // Debounced save — coalesces rapid writes into one disk operation
+    private func scheduleSave() {
+        saveTask?.cancel()
+        let snapshot = items
+        saveTask = Task {
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled else { return }
+            Persistence.shared.save(snapshot)
+        }
+    }
+}
