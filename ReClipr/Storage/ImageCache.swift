@@ -9,7 +9,7 @@
 import AppKit
 
 final class ImageCache {
-    nonisolated(unsafe) static let shared = ImageCache()
+    static let shared = ImageCache()
 
     // NSCache is documented thread-safe — nonisolated(unsafe) removes actor isolation
     // while preserving Sendable correctness for the reference type.

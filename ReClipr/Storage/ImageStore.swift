@@ -10,7 +10,7 @@ import CryptoKit
 import Foundation
 
 final class ImageStore {
-    nonisolated(unsafe) static let shared = ImageStore()
+    static let shared = ImageStore()
     private init() {}
 
     // MARK: - Public API (nonisolated — safe to call from any thread / actor)
