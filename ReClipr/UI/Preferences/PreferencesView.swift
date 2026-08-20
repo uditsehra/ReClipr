@@ -5,8 +5,11 @@
 //  Created by Udit Sehra on 21/12/25.
 //
 
-import SwiftUI
+import OSLog
 import ServiceManagement
+import SwiftUI
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "ReClipr", category: "Preferences")
 
 struct PreferencesView: View {
     @AppStorage("launchAtLogin") private var launchAtLogin: Bool = false
@@ -157,7 +160,7 @@ struct PreferencesView: View {
                 try SMAppService.mainApp.unregister()
             }
         } catch {
-            print("Launch at login setting failed:", error)
+            logger.error("Launch at login failed: \(error, privacy: .public)")
         }
     }
 }

@@ -60,12 +60,13 @@ final class ClipboardMonitor {
             return
         }
 
-        // Priority 2: Images — compress to PNG to save significant storage vs raw TIFF
+        // Priority 2: Images — compress to PNG, save to disk, reference by hash
         if let image = NSImage(pasteboard: pasteboard),
            let tiff = image.tiffRepresentation,
            let bitmap = NSBitmapImageRep(data: tiff),
            let png = bitmap.representation(using: .png, properties: [:]) {
-            onNewCopy?(.image(png), webMeta)
+            let hash = ImageStore.shared.save(png)
+            onNewCopy?(.image(hash), webMeta)
             return
         }
 

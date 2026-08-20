@@ -6,6 +6,9 @@
 //
 
 import Foundation
+import OSLog
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "ReClipr", category: "Persistence")
 
 final class Persistence {
     static let shared = Persistence()
@@ -32,7 +35,7 @@ final class Persistence {
         do {
             return try JSONDecoder().decode([ClipItem].self, from: data)
         }   catch{
-            print("Failed to decode history", error)
+            logger.error("Failed to decode history: \(error, privacy: .public)")
             return []
         }
 

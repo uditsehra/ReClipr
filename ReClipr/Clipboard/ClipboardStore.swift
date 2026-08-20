@@ -4,8 +4,8 @@
 //
 //  Created by Udit Sehra on 21/12/25.
 //
-import SwiftUI
 import Combine
+import SwiftUI
 
 final class ClipboardStore: ObservableObject {
     @AppStorage("maxHistoryCount") private var maxHistoryCount: Int = 200
@@ -134,7 +134,11 @@ final class ClipboardStore: ObservableObject {
         }
 
         if items.count > maxHistoryCount {
+            let dropped = Array(items.suffix(items.count - maxHistoryCount))
             items = Array(items.prefix(maxHistoryCount))
+            for item in dropped {
+                if case .image(let hash) = item.content { cleanupImageIfOrphaned(hash) }
+            }
         }
     }
 
@@ -144,8 +148,8 @@ final class ClipboardStore: ObservableObject {
         switch item.content {
         case .text(let text):
             pb.setString(text, forType: .string)
-        case .image(let data):
-            if let image = NSImage(data: data) {
+        case .image(let hash):
+            if let data = ImageStore.shared.load(hash), let image = NSImage(data: data) {
                 pb.writeObjects([image])
             }
         case .file(let url):
@@ -157,10 +161,26 @@ final class ClipboardStore: ObservableObject {
 
     func deleteItem(_ item: ClipItem) {
         items.removeAll { $0.id == item.id }
+        if case .image(let hash) = item.content {
+            cleanupImageIfOrphaned(hash)
+        }
     }
 
     func clearAll() {
         items.removeAll()
+        ImageStore.shared.deleteAll()
+        ImageCache.shared.invalidateAll()
+    }
+
+    // Deletes the image file only when no remaining item references the same hash.
+    private func cleanupImageIfOrphaned(_ hash: String) {
+        let stillReferenced = items.contains {
+            if case .image(let h) = $0.content { return h == hash }
+            return false
+        }
+        guard !stillReferenced else { return }
+        ImageStore.shared.delete(hash)
+        ImageCache.shared.invalidate(hash)
     }
 
     // Debounced save — coalesces rapid writes into one disk operation
