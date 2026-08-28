@@ -4,89 +4,110 @@
 //
 //  Created by Udit Sehra on 21/12/25.
 //
+//  Ownership and wiring only; each surface lives in its own controller.
+//
 
 import AppKit
+import Combine
 import SwiftUI
 
-extension Notification.Name {
-    static let closeReCliprPopover   = Notification.Name("ReClipr.closePopover")
-    static let openReCliprPreferences = Notification.Name("ReClipr.openPreferences")
-}
-
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    let store = ClipboardStore()
+    // Lazy, not eager: stored-property initialisers run before
+    // applicationWillFinishLaunching, and StorageMigration must complete before
+    // ClipboardStore reads history.json.
+    private(set) lazy var store = ClipboardStore()
 
-    private var statusItem: NSStatusItem?
-    private var popover: NSPopover?
-    private var preferencesWindow: NSWindow?
+    private let settings = AppSettings.shared
+    private lazy var actions = SurfaceActions()
+    private lazy var menuBar = MenuBarController(store: store, actions: actions)
+    private lazy var overlay = OverlayController(store: store, actions: actions)
+    private lazy var coordinator = PresentationCoordinator(
+        settings: settings, menuBar: menuBar, overlay: overlay)
+
+    private var preferencesWindow: PreferencesWindow?
+    private var cancellables = Set<AnyCancellable>()
+
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // Registered defaults must exist before anything reads a preference, and the
+        // migration must precede both. Neither touches the lazy `store`.
+        AppSettings.registerDefaults()
+        StorageMigration.runIfNeeded()
+        TempExport.shared.purge()
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        setupStatusItem()
+        actions.dismiss = { [weak self] in self?.coordinator.dismissAll() }
+        actions.openPreferences = { [weak self] in self?.openPreferences() }
+
+        menuBar.onPrimaryClick = { [weak self] in self?.coordinator.toggleHistory() }
+        menuBar.setEnabled(settings.showMenuBarIcon)
+
+        settings.$showMenuBarIcon
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] enabled in self?.menuBar.setEnabled(enabled) }
+            .store(in: &cancellables)
+
+        settings.$shortcutKeyCode
+            .combineLatest(settings.$shortcutModifiers)
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _, _ in self?.applyStoredShortcut() }
+            .store(in: &cancellables)
+
         applyStoredShortcut()
 
-        NotificationCenter.default.addObserver(
-            forName: .closeReCliprPopover,
+        // macOS does not announce a change to the screenshot location, so re-resolve
+        // whenever the user comes back to us.
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.popover?.close()
-        }
-
-        NotificationCenter.default.addObserver(
-            forName: .openReCliprPreferences,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            self?.openPreferences()
+            MainActor.assumeIsolated { self?.store.refreshScreenshotWatch() }
         }
     }
 
-    // MARK: - Status Item + Popover
-
-    private func setupStatusItem() {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = NSImage(systemSymbolName: "paperclip", accessibilityDescription: "ReClipr")
-        item.button?.action = #selector(togglePopover)
-        item.button?.target = self
-        statusItem = item
-
-        let hc = NSHostingController(rootView: RootView().environmentObject(store))
-        hc.view.frame = NSRect(x: 0, y: 0, width: 352, height: 540)
-
-        let pop = NSPopover()
-        pop.contentViewController = hc
-        pop.contentSize = NSSize(width: 352, height: 540)
-        pop.behavior = .transient
-        popover = pop
+    /// Double-clicking the app while it is already running is the most discoverable
+    /// way back in if the icon is hidden and the shortcut was cleared.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+        openPreferences()
+        return true
     }
 
-    @objc func togglePopover() {
-        guard let button = statusItem?.button, let popover else { return }
-        if popover.isShown {
-            popover.close()
-        } else {
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-            NSApp.activate(ignoringOtherApps: true)
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls where url.scheme == "reclipr" {
+            switch url.host {
+            case "preferences": openPreferences()
+            case "show":        coordinator.toggleHistory()
+            default:            break
+            }
         }
     }
 
-    // MARK: - Preferences Window
+    // MARK: - Preferences
 
     @objc func openPreferences() {
-        // Close the popover first so its transient-dismiss doesn't race with the
-        // window becoming key, which would cause the preferences window to disappear.
-        popover?.close()
+        // Close whatever is showing first, so its dismissal does not race the window
+        // becoming key.
+        coordinator.prepareForWindowPresentation()
 
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             if self.preferencesWindow == nil {
-                let vc = NSHostingController(rootView: PreferencesView())
-                let window = NSWindow(contentViewController: vc)
+                let controller = NSHostingController(
+                    rootView: PreferencesView()
+                        .environmentObject(self.store)
+                        .environmentObject(AppSettings.shared))
+                let window = PreferencesWindow(contentViewController: controller)
                 window.title = "Preferences"
                 window.styleMask = [.titled, .closable]
-                window.setContentSize(NSSize(width: 340, height: 460))
+                window.setContentSize(NSSize(width: 460, height: 460))
                 window.center()
                 window.isReleasedWhenClosed = false
+                window.onCancel = { [weak self] in
+                    self?.coordinator.restoreSurfaceAfterWindow()
+                }
                 self.preferencesWindow = window
             }
             self.preferencesWindow?.makeKeyAndOrderFront(nil)
@@ -97,15 +118,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Global Hotkey
 
     func applyStoredShortcut() {
-        let defaults = UserDefaults.standard
-        let keyCode = defaults.object(forKey: "shortcutKeyCode") as? Int ?? 9
-        let modRaw  = defaults.object(forKey: "shortcutModifiers") as? Int ?? 1_179_648 // ⌘⇧
-        GlobalHotkeyManager.shared.register(
-            keyCode: keyCode,
-            modifiers: NSEvent.ModifierFlags(rawValue: UInt(modRaw))
-        )
+        let ok = GlobalHotkeyManager.shared.register(
+            keyCode: settings.shortcutKeyCode,
+            modifiers: NSEvent.ModifierFlags(rawValue: UInt(settings.shortcutModifiers)))
+        settings.shortcutRegistrationFailed = settings.hasShortcut && !ok
+
         GlobalHotkeyManager.shared.onActivate = { [weak self] in
-            self?.togglePopover()
+            self?.coordinator.toggleHistory()
         }
     }
 }

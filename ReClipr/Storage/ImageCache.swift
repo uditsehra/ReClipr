@@ -2,7 +2,7 @@
 //  ImageCache.swift
 //  ReClipr
 //
-//  NSImage LRU cache backed by NSCache. Loads from ImageStore on miss.
+//  NSImage LRU cache backed by NSCache. Loads from BlobStore on miss.
 //  NSCache is thread-safe, so all methods are nonisolated.
 //
 
@@ -24,7 +24,7 @@ final class ImageCache {
     nonisolated func image(for hash: String) -> NSImage? {
         let key = hash as NSString
         if let hit = cache.object(forKey: key) { return hit }
-        guard let data = ImageStore.shared.load(hash),
+        guard let data = BlobStore.shared.loadPNG(hash: hash),
               let img = NSImage(data: data) else { return nil }
         cache.setObject(img, forKey: key, cost: data.count)
         return img
