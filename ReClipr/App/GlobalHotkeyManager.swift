@@ -19,18 +19,23 @@ final class GlobalHotkeyManager {
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandlerRef: EventHandlerRef?
     private var localMonitor: Any?
+    private var lastFire: TimeInterval = 0
 
     // MARK: - Public API
 
-    func register(keyCode: Int, modifiers: NSEvent.ModifierFlags) {
+    /// Returns false when the combination could not be claimed — almost always
+    /// because another application already owns it. Previously the OSStatus was
+    /// discarded, so a conflicting shortcut failed silently.
+    @discardableResult
+    func register(keyCode: Int, modifiers: NSEvent.ModifierFlags) -> Bool {
         unregister()
-        guard keyCode >= 0 else { return }
+        guard keyCode >= 0 else { return false }
 
         // Install the Carbon event handler once; it persists for the app lifetime.
         if eventHandlerRef == nil { installCarbonHandler() }
 
         let hotKeyID = EventHotKeyID(signature: 0x52434C50, id: 1) // 'RCLP'
-        RegisterEventHotKey(
+        let status = RegisterEventHotKey(
             UInt32(keyCode),
             Self.carbonModifiers(from: modifiers),
             hotKeyID,
@@ -46,9 +51,22 @@ final class GlobalHotkeyManager {
             guard Int(event.keyCode) == keyCode,
                   event.modifierFlags.intersection(.deviceIndependentFlagsMask) == targetMods
             else { return event }
-            self?.onActivate?()
+            self?.fire()
             return nil
         }
+
+        return status == noErr
+    }
+
+    /// Carbon and the local monitor can both observe the same press — the overlay is
+    /// a non-activating panel, so ReClipr is key without being the active app, which
+    /// is exactly the case the local monitor exists for. Without this guard the
+    /// shortcut would toggle twice and appear to do nothing.
+    private func fire() {
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastFire > 0.15 else { return }
+        lastFire = now
+        onActivate?()
     }
 
     func unregister() {
@@ -67,10 +85,14 @@ final class GlobalHotkeyManager {
             GetEventDispatcherTarget(),
             { (_, _, userData) -> OSStatus in
                 guard let ptr = userData else { return OSStatus(eventNotHandledErr) }
-                Unmanaged<GlobalHotkeyManager>
-                    .fromOpaque(ptr)
-                    .takeUnretainedValue()
-                    .onActivate?()
+                // Carbon hot keys are delivered on the main run loop, so this is a
+                // safe hop from the C trampoline into main-actor state.
+                MainActor.assumeIsolated {
+                    Unmanaged<GlobalHotkeyManager>
+                        .fromOpaque(ptr)
+                        .takeUnretainedValue()
+                        .fire()
+                }
                 return noErr
             },
             1,

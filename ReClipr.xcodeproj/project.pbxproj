@@ -6,14 +6,34 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		AA000100000000000000000B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0A8E380A2EF807E700508BF0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0A8E38112EF807E700508BF0;
+			remoteInfo = ReClipr;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		AA000100000000000000000A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0A8E38112EF807E700508BF0 /* ReClipr */;
+			targetProxy = AA000100000000000000000B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin PBXFileReference section */
 		0A8E38122EF807E700508BF0 /* ReClipr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReClipr.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0001000000000000000002 /* ReCliprTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ReCliprTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
 		0A8E38402EF81B2400508BF0 /* Exceptions for "ReClipr" folder in "ReClipr" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Info.plist,
 				LoginHelper/main.swift,
 			);
 			platformFiltersByRelativePath = {
@@ -23,7 +43,6 @@
 				Model/ClipContent.swift = (macos, );
 				Model/ClipItem.swift = (macos, );
 				Persistence/Persistence.swift = (macos, );
-				UI/Menu/ReCliprMenuView.swift = (macos, );
 			};
 			target = 0A8E38112EF807E700508BF0 /* ReClipr */;
 		};
@@ -38,10 +57,22 @@
 			path = ReClipr;
 			sourceTree = "<group>";
 		};
+		AA0001000000000000000006 /* ReCliprTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ReCliprTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		0A8E380F2EF807E700508BF0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA0001000000000000000004 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -55,6 +86,7 @@
 			isa = PBXGroup;
 			children = (
 				0A8E38142EF807E700508BF0 /* ReClipr */,
+				AA0001000000000000000006 /* ReCliprTests */,
 				0A8E38132EF807E700508BF0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -62,6 +94,7 @@
 		0A8E38132EF807E700508BF0 /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				AA0001000000000000000002 /* ReCliprTests.xctest */,
 				0A8E38122EF807E700508BF0 /* ReClipr.app */,
 			);
 			name = Products;
@@ -91,6 +124,27 @@
 			productName = ReClipr;
 			productReference = 0A8E38122EF807E700508BF0 /* ReClipr.app */;
 			productType = "com.apple.product-type.application";
+		};
+		AA0001000000000000000001 /* ReCliprTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA0001000000000000000007 /* Build configuration list for PBXNativeTarget "ReCliprTests" */;
+			buildPhases = (
+				AA0001000000000000000003 /* Sources */,
+				AA0001000000000000000004 /* Frameworks */,
+				AA0001000000000000000005 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AA000100000000000000000A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AA0001000000000000000006 /* ReCliprTests */,
+			);
+			name = ReCliprTests;
+			productName = ReCliprTests;
+			productReference = AA0001000000000000000002 /* ReCliprTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -122,6 +176,7 @@
 			projectRoot = "";
 			targets = (
 				0A8E38112EF807E700508BF0 /* ReClipr */,
+				AA0001000000000000000001 /* ReCliprTests */,
 			);
 		};
 /* End PBXProject section */
@@ -134,10 +189,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA0001000000000000000005 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		0A8E380E2EF807E700508BF0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA0001000000000000000003 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -206,8 +275,11 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "ReClipr watches your screenshots folder so new screenshots appear in your clipboard history.";
+				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "ReClipr needs access to add files you copy to your clipboard history.";
+				INFOPLIST_KEY_NSDownloadsFolderUsageDescription = "ReClipr needs access to add files you copy to your clipboard history.";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -271,8 +343,11 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "ReClipr watches your screenshots folder so new screenshots appear in your clipboard history.";
+				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "ReClipr needs access to add files you copy to your clipboard history.";
+				INFOPLIST_KEY_NSDownloadsFolderUsageDescription = "ReClipr needs access to add files you copy to your clipboard history.";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
@@ -291,15 +366,18 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 27QH58D9F5;
-				ENABLE_APP_SANDBOX = YES;
+				DEVELOPMENT_TEAM = CV8C897QHG;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ReClipr/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ReClipr;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "ReClipr watches your screenshots folder so new screenshots appear in your clipboard history.";
+				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "ReClipr needs access to add files you copy to your clipboard history.";
+				INFOPLIST_KEY_NSDownloadsFolderUsageDescription = "ReClipr needs access to add files you copy to your clipboard history.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -309,7 +387,6 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.budda.ReClipr;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -329,15 +406,18 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 27QH58D9F5;
-				ENABLE_APP_SANDBOX = YES;
+				DEVELOPMENT_TEAM = CV8C897QHG;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ReClipr/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ReClipr;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "ReClipr watches your screenshots folder so new screenshots appear in your clipboard history.";
+				INFOPLIST_KEY_NSDocumentsFolderUsageDescription = "ReClipr needs access to add files you copy to your clipboard history.";
+				INFOPLIST_KEY_NSDownloadsFolderUsageDescription = "ReClipr needs access to add files you copy to your clipboard history.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -347,13 +427,50 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.budda.ReClipr;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		AA0001000000000000000008 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.budda.ReCliprTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ReClipr.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ReClipr";
+			};
+			name = Debug;
+		};
+		AA0001000000000000000009 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.budda.ReCliprTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ReClipr.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ReClipr";
 			};
 			name = Release;
 		};
@@ -374,6 +491,15 @@
 			buildConfigurations = (
 				0A8E381E2EF807E900508BF0 /* Debug */,
 				0A8E381F2EF807E900508BF0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA0001000000000000000007 /* Build configuration list for PBXNativeTarget "ReCliprTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA0001000000000000000008 /* Debug */,
+				AA0001000000000000000009 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
